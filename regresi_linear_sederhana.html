@@ -2,71 +2,451 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Regresi Linier Sederhana</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-        }
-        input, button {
-            margin: 5px 0;
-            padding: 6px;
-        }
-        .hasil {
-            margin-top: 20px;
-            font-weight: bold;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Load Testing Analysis - Concurrent Users vs Server Response Time</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    
+    <!-- Header -->
+    <header class="bg-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-indigo-600">Load Testing Analysis</h1>
+                    <p class="text-gray-600 mt-1">Analisis Hubungan Concurrent Users & Server Response Time</p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-block bg-indigo-100 text-indigo-800 px-4 py-2 rounded-full text-sm font-semibold">
+                        IT Professional Tool
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
 
-<h2>Analisis Regresi Linier Sederhana</h2>
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        
+        <!-- Input Section -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 Input Data Testing</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Concurrent Users (X)</label>
+                    <input type="number" id="users" placeholder="Contoh: 100" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Response Time (Y) - ms</label>
+                    <input type="number" id="responseTime" placeholder="Contoh: 250" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+            </div>
+            
+            <div class="flex gap-4">
+                <button onclick="addData()" 
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg transition duration-300 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Tambah Data
+                </button>
+                <button onclick="generateSampleData()" 
+                        class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition duration-300">
+                    🎲 Generate Sample Data
+                </button>
+                <button onclick="clearData()" 
+                        class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition duration-300">
+                    🗑️ Clear All
+                </button>
+            </div>
+        </div>
 
-<label>Masukkan data X (pisahkan dengan koma):</label><br>
-<input type="text" id="xData" placeholder="Contoh: 1,2,3,4"><br>
+        <!-- Chart Section -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📈 Visualisasi Grafik</h2>
+            <div class="relative h-96">
+                <canvas id="loadTestChart"></canvas>
+            </div>
+        </div>
 
-<label>Masukkan data Y (pisahkan dengan koma):</label><br>
-<input type="text" id="yData" placeholder="Contoh: 2,4,6,8"><br>
+        <!-- Data Table & Statistics -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Data Table -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">📋 Data Testing</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-indigo-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-indigo-900 font-semibold">#</th>
+                                <th class="px-4 py-3 text-left text-indigo-900 font-semibold">Concurrent Users</th>
+                                <th class="px-4 py-3 text-left text-indigo-900 font-semibold">Response Time (ms)</th>
+                                <th class="px-4 py-3 text-center text-indigo-900 font-semibold">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTable" class="divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                                    Belum ada data. Tambahkan data atau generate sample data.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-<label>Masukkan nilai X untuk prediksi:</label><br>
-<input type="number" id="xPrediksi"><br>
+            <!-- Statistics -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 Statistik & Analisis</h2>
+                
+                <div class="space-y-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-sm text-blue-600 font-semibold mb-1">Total Data Points</p>
+                        <p class="text-2xl font-bold text-blue-900" id="totalData">0</p>
+                    </div>
+                    
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <p class="text-sm text-green-600 font-semibold mb-1">Avg Response Time</p>
+                        <p class="text-2xl font-bold text-green-900" id="avgResponse">-</p>
+                    </div>
+                    
+                    <div class="bg-yellow-50 p-4 rounded-lg">
+                        <p class="text-sm text-yellow-600 font-semibold mb-1">Max Response Time</p>
+                        <p class="text-2xl font-bold text-yellow-900" id="maxResponse">-</p>
+                    </div>
+                    
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <p class="text-sm text-purple-600 font-semibold mb-1">Min Response Time</p>
+                        <p class="text-2xl font-bold text-purple-900" id="minResponse">-</p>
+                    </div>
 
-<button onclick="hitungRegresi()">Hitung Regresi</button>
+                    <div class="bg-red-50 p-4 rounded-lg">
+                        <p class="text-sm text-red-600 font-semibold mb-1">Status Server</p>
+                        <p class="text-lg font-bold text-red-900" id="serverStatus">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-<div class="hasil" id="hasil"></div>
+        <!-- Analysis & Recommendations -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mt-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">💡 Analisis & Rekomendasi</h2>
+            <div id="analysis" class="prose max-w-none text-gray-700">
+                <p class="text-gray-500 italic">Tambahkan data untuk melihat analisis dan rekomendasi.</p>
+            </div>
+        </div>
 
-<script>
-function hitungRegresi() {
-    let x = document.getElementById("xData").value.split(",").map(Number);
-    let y = document.getElementById("yData").value.split(",").map(Number);
-    let xp = Number(document.getElementById("xPrediksi").value);
+    </main>
 
-    let n = x.length;
+    <!-- Footer -->
+    <footer class="bg-white shadow-lg mt-12">
+        <div class="container mx-auto px-6 py-4 text-center text-gray-600">
+            <p>&copy; 2024 Load Testing Analysis Tool | Made for IT Professionals</p>
+        </div>
+    </footer>
 
-    if (n !== y.length || n === 0) {
-        alert("Jumlah data X dan Y harus sama dan tidak boleh kosong!");
-        return;
-    }
+    <script>
+        // Data storage
+        let testData = [];
+        let chart = null;
 
-    let sumX = 0, sumY = 0, sumX2 = 0, sumXY = 0;
+        // Initialize chart
+        function initChart() {
+            const ctx = document.getElementById('loadTestChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Response Time (ms)',
+                        data: [],
+                        borderColor: 'rgb(79, 70, 229)',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: 'rgb(79, 70, 229)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Concurrent Users vs Response Time',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Concurrent Users',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Response Time (ms)',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
 
-    for (let i = 0; i < n; i++) {
-        sumX += x[i];
-        sumY += y[i];
-        sumX2 += x[i] * x[i];
-        sumXY += x[i] * y[i];
-    }
+        // Add data
+        function addData() {
+            const users = parseInt(document.getElementById('users').value);
+            const responseTime = parseInt(document.getElementById('responseTime').value);
 
-    let b = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-    let a = (sumY - b * sumX) / n;
+            if (!users || !responseTime) {
+                alert('⚠️ Mohon isi kedua field!');
+                return;
+            }
 
-    let yp = a + b * xp;
+            if (users <= 0 || responseTime <= 0) {
+                alert('⚠️ Nilai harus lebih besar dari 0!');
+                return;
+            }
 
-    document.getElementById("hasil").innerHTML =
-        "Persamaan regresi: Y = " + a.toFixed(2) + " + " + b.toFixed(2) + "X<br>" +
-        "Prediksi nilai Y untuk X = " + xp + " adalah " + yp.toFixed(2);
-}
-</script>
+            testData.push({ users, responseTime });
+            testData.sort((a, b) => a.users - b.users);
+
+            updateDisplay();
+            
+            // Clear inputs
+            document.getElementById('users').value = '';
+            document.getElementById('responseTime').value = '';
+        }
+
+        // Generate sample data
+        function generateSampleData() {
+            testData = [
+                { users: 10, responseTime: 50 },
+                { users: 50, responseTime: 80 },
+                { users: 100, responseTime: 120 },
+                { users: 200, responseTime: 200 },
+                { users: 300, responseTime: 350 },
+                { users: 500, responseTime: 650 },
+                { users: 750, responseTime: 1200 },
+                { users: 1000, responseTime: 2500 },
+                { users: 1500, responseTime: 5000 }
+            ];
+            updateDisplay();
+        }
+
+        // Clear all data
+        function clearData() {
+            if (testData.length === 0) return;
+            
+            if (confirm('🗑️ Hapus semua data?')) {
+                testData = [];
+                updateDisplay();
+            }
+        }
+
+        // Delete single data point
+        function deleteData(index) {
+            testData.splice(index, 1);
+            updateDisplay();
+        }
+
+        // Update all displays
+        function updateDisplay() {
+            updateTable();
+            updateChart();
+            updateStatistics();
+            updateAnalysis();
+        }
+
+        // Update table
+        function updateTable() {
+            const tbody = document.getElementById('dataTable');
+            
+            if (testData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                            Belum ada data. Tambahkan data atau generate sample data.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = testData.map((item, index) => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 font-medium text-gray-900">${index + 1}</td>
+                    <td class="px-4 py-3 text-gray-700">${item.users}</td>
+                    <td class="px-4 py-3 text-gray-700">${item.responseTime} ms</td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="deleteData(${index})" 
+                                class="text-red-600 hover:text-red-800 font-semibold">
+                            Hapus
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Update chart
+        function updateChart() {
+            if (!chart) return;
+
+            chart.data.labels = testData.map(item => item.users);
+            chart.data.datasets[0].data = testData.map(item => item.responseTime);
+            chart.update();
+        }
+
+        // Update statistics
+        function updateStatistics() {
+            document.getElementById('totalData').textContent = testData.length;
+
+            if (testData.length === 0) {
+                document.getElementById('avgResponse').textContent = '-';
+                document.getElementById('maxResponse').textContent = '-';
+                document.getElementById('minResponse').textContent = '-';
+                document.getElementById('serverStatus').textContent = '-';
+                return;
+            }
+
+            const responseTimes = testData.map(item => item.responseTime);
+            const avg = (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(2);
+            const max = Math.max(...responseTimes);
+            const min = Math.min(...responseTimes);
+
+            document.getElementById('avgResponse').textContent = `${avg} ms`;
+            document.getElementById('maxResponse').textContent = `${max} ms`;
+            document.getElementById('minResponse').textContent = `${min} ms`;
+
+            // Server status
+            let status = '';
+            if (max < 200) {
+                status = '✅ Excellent';
+            } else if (max < 500) {
+                status = '🟢 Good';
+            } else if (max < 1000) {
+                status = '🟡 Warning';
+            } else if (max < 3000) {
+                status = '🟠 Critical';
+            } else {
+                status = '🔴 Overloaded';
+            }
+            document.getElementById('serverStatus').textContent = status;
+        }
+
+        // Update analysis
+        function updateAnalysis() {
+            const analysisDiv = document.getElementById('analysis');
+
+            if (testData.length === 0) {
+                analysisDiv.innerHTML = '<p class="text-gray-500 italic">Tambahkan data untuk melihat analisis dan rekomendasi.</p>';
+                return;
+            }
+
+            const responseTimes = testData.map(item => item.responseTime);
+            const max = Math.max(...responseTimes);
+            const avg = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+
+            let analysis = '<div class="space-y-4">';
+
+            // Trend analysis
+            if (testData.length >= 2) {
+                const first = testData[0].responseTime;
+                const last = testData[testData.length - 1].responseTime;
+                const increase = ((last - first) / first * 100).toFixed(2);
+
+                analysis += `
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h3 class="font-bold text-blue-900 mb-2">📈 Trend Analysis</h3>
+                        <p>Response time meningkat sebesar <strong>${increase}%</strong> dari ${testData[0].users} users (${first}ms) ke ${testData[testData.length - 1].users} users (${last}ms).</p>
+                    </div>
+                `;
+            }
+
+            // Performance assessment
+            analysis += `
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="font-bold text-green-900 mb-2">⚡ Performance Assessment</h3>
+            `;
+
+            if (max < 200) {
+                analysis += '<p>Server performance <strong>sangat baik</strong>. Response time optimal untuk user experience.</p>';
+            } else if (max < 500) {
+                analysis += '<p>Server performance <strong>baik</strong>. Response time masih dalam batas yang dapat diterima.</p>';
+            } else if (max < 1000) {
+                analysis += '<p>Server mulai menunjukkan <strong>tanda-tanda stress</strong>. Perlu dimonitor lebih ketat.</p>';
+            } else if (max < 3000) {
+                analysis += '<p>Server dalam kondisi <strong>critical</strong>. Optimisasi segera diperlukan.</p>';
+            } else {
+                analysis += '<p>Server <strong>overloaded</strong>. User experience sangat terganggu. Action immediate required!</p>';
+            }
+
+            analysis += '</div>';
+
+            // Recommendations
+            analysis += `
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <h3 class="font-bold text-yellow-900 mb-2">💡 Rekomendasi</h3>
+                    <ul class="list-disc list-inside space-y-2">
+            `;
+
+            if (avg > 500) {
+                analysis += '<li>Implementasikan caching mechanism (Redis/Memcached)</li>';
+                analysis += '<li>Optimize database queries dengan indexing</li>';
+                analysis += '<li>Consider horizontal scaling (load balancer)</li>';
+            }
+
+            if (max > 1000) {
+                analysis += '<li>Review dan optimize application code</li>';
+                analysis += '<li>Upgrade server resources (CPU/RAM)</li>';
+                analysis += '<li>Implementasikan CDN untuk static assets</li>';
+            }
+
+            if (testData.length > 0) {
+                const maxUsers = Math.max(...testData.map(item => item.users));
+                analysis += `<li>Optimal capacity: sekitar ${Math.floor(maxUsers * 0.7)} concurrent users untuk maintain SLA</li>`;
+            }
+
+            analysis += `
+                    </ul>
+                </div>
+            `;
+
+            analysis += '</div>';
+            analysisDiv.innerHTML = analysis;
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            initChart();
+        };
+    </script>
 
 </body>
 </html>
