@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Regresi Linier Sederhana</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+        input, button {
+            margin: 5px 0;
+            padding: 6px;
+        }
+        .hasil {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Analisis Regresi Linier Sederhana</h2>
+
+<label>Masukkan data X (pisahkan dengan koma):</label><br>
+<input type="text" id="xData" placeholder="Contoh: 1,2,3,4"><br>
+
+<label>Masukkan data Y (pisahkan dengan koma):</label><br>
+<input type="text" id="yData" placeholder="Contoh: 2,4,6,8"><br>
+
+<label>Masukkan nilai X untuk prediksi:</label><br>
+<input type="number" id="xPrediksi"><br>
+
+<button onclick="hitungRegresi()">Hitung Regresi</button>
+
+<div class="hasil" id="hasil"></div>
+
+<script>
+function hitungRegresi() {
+    let x = document.getElementById("xData").value.split(",").map(Number);
+    let y = document.getElementById("yData").value.split(",").map(Number);
+    let xp = Number(document.getElementById("xPrediksi").value);
+
+    let n = x.length;
+
+    if (n !== y.length || n === 0) {
+        alert("Jumlah data X dan Y harus sama dan tidak boleh kosong!");
+        return;
+    }
+
+    let sumX = 0, sumY = 0, sumX2 = 0, sumXY = 0;
+
+    for (let i = 0; i < n; i++) {
+        sumX += x[i];
+        sumY += y[i];
+        sumX2 += x[i] * x[i];
+        sumXY += x[i] * y[i];
+    }
+
+    let b = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    let a = (sumY - b * sumX) / n;
+
+    let yp = a + b * xp;
+
+    document.getElementById("hasil").innerHTML =
+        "Persamaan regresi: Y = " + a.toFixed(2) + " + " + b.toFixed(2) + "X<br>" +
+        "Prediksi nilai Y untuk X = " + xp + " adalah " + yp.toFixed(2);
+}
+</script>
+
+</body>
+</html>
